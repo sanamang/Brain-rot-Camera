@@ -68,10 +68,17 @@ def is_hand_open(palm, finger_tips):
     for fx, fy in finger_tips:
         d = math.sqrt((fx - px) ** 2 + (fy - py) ** 2)
         dists.append(d)
-    # Debug if needed:
-    # print("finger distances:", ["{:.3f}".format(d) for d in dists])
     return all(d > OPEN_FINGER_THRESHOLD for d in dists)
 
+
+# CAMERA WINDOW LOCATION (adjust if your webcam resolution is different)
+CAMERA_X = 50
+CAMERA_Y = 50
+CAMERA_W = 640     # width of your camera window
+CAMERA_H = 480     # height of your camera window
+
+# POPUPS WILL BE PLACED TO THE RIGHT OF THE CAMERA
+RIGHT_START_X = CAMERA_X + CAMERA_W + 30
 
 while True:
     ret, frame = cap.read()
@@ -163,25 +170,16 @@ while True:
         hand0_open = is_hand_open(palm_centers[0], finger_tips_all[0])
         hand1_open = is_hand_open(palm_centers[1], finger_tips_all[1])
 
-        # Optional debug:
-        # print(f"dy0={dy0:.4f}, dy1={dy1:.4f}, moving0={moving0}, moving1={moving1}, opposite={opposite}, open0={hand0_open}, open1={hand1_open}")
-
         if moving0 and moving1 and opposite and hand0_open and hand1_open:
             gesture_67 = True
             last_67_time = now
             print("6–7 gesture detected with BOTH hands open!")
-            # clear so you need a new motion each time
             history_y[0].clear()
             history_y[1].clear()
-            # reset pinch state to avoid weird carry-over
             pinch_prev[0] = False
             pinch_prev[1] = False
 
     # clock-it gesture: thumb + index finger touching on EXACTLY ONE hand
-    # ONLY if:
-    # - we did NOT just detect a 6–7 gesture, AND
-    # - enough time has passed since last 6–7, AND
-    # - exactly one hand is visible
     if (not gesture_67) and (now - last_67_time > CLOCK_IT_BLOCK_AFTER_67) and num_hands == 1:
         idx = list(current_hand_positions.keys())[0]  # the visible hand
         if idx in thumb_tips and idx in index_tips:
@@ -191,7 +189,6 @@ while True:
 
             is_pinch = dist < PINCH_THRESHOLD
 
-            # trigger ONLY on pinch start (false -> true)
             if is_pinch and not pinch_prev[idx]:
                 gesture_clock = True
                 print(f"clock-it pinch detected with hand {idx}! (dist={dist:.4f})")
@@ -203,23 +200,23 @@ while True:
     if gesture_67:
         trigger_count_67 += 1
         window_name = f"6 7 MEME #{trigger_count_67}"
-        resized = cv2.resize(meme_67, (400, 400))
+        resized = cv2.resize(meme_67, (350, 350))
         cv2.imshow(window_name, resized)
 
-        # random window position
-        x_win = random.randint(0, 1200)
-        y_win = random.randint(0, 700)
+        # Safe random spawn area on RIGHT side only
+        x_win = random.randint(RIGHT_START_X, RIGHT_START_X + 600)
+        y_win = random.randint(50, 700)
         cv2.moveWindow(window_name, x_win, y_win)
 
     if gesture_clock:
         trigger_count_clock += 1
         window_name = f"CLOCK IT MEME #{trigger_count_clock}"
-        resized = cv2.resize(meme_clock, (400, 400))
+        resized = cv2.resize(meme_clock, (350, 350))
         cv2.imshow(window_name, resized)
 
-        # random window position
-        x_win = random.randint(0, 1200)
-        y_win = random.randint(0, 700)
+        # Safe random spawn area on RIGHT side only
+        x_win = random.randint(RIGHT_START_X, RIGHT_START_X + 600)
+        y_win = random.randint(50, 700)
         cv2.moveWindow(window_name, x_win, y_win)
 
     # show camera feed
